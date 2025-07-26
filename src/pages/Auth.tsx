@@ -23,6 +23,9 @@ const Auth = () => {
   const [photoPreview, setPhotoPreview] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -79,61 +82,169 @@ const Auth = () => {
     }
   };
 
+  const generateOTP = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      // Generate OTP
+      const otpCode = generateOTP();
       
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            phone_number: phoneNumber,
-            date_of_birth: dateOfBirth,
-            address: address,
-          }
+      // Convert profile photo to base64 if provided
+      let profilePhotoData = null;
+      if (profilePhoto) {
+        const reader = new FileReader();
+        profilePhotoData = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(profilePhoto);
+        });
+      }
+
+      // Store pending user data
+      const { error: insertError } = await supabase
+        .from('pending_users')
+        .insert({
+          email,
+          password_hash: password, // Note: In production, hash this on the backend
+          full_name: fullName,
+          phone_number: phoneNumber,
+          date_of_birth: dateOfBirth || null,
+          address: address,
+          otp_code: otpCode,
+          profile_photo_data: profilePhotoData
+        });
+
+      if (insertError) {
+        if (insertError.message.includes('duplicate key')) {
+          setError("A verification code has already been sent to this email. Please check your inbox or try again in a few minutes.");
+        } else {
+          setError("Failed to process signup. Please try again.");
+        }
+        return;
+      }
+
+      // Send OTP email
+      const { data: emailResponse, error: emailError } = await supabase.functions.invoke('send-otp', {
+        body: {
+          email,
+          otp: otpCode,
+          fullName: fullName || 'User'
         }
       });
 
-      if (error) {
-        if (error.message.includes("User already registered")) {
-          setError("This email is already registered. Please sign in instead.");
-        } else {
-          setError(error.message);
-        }
-      } else if (data.user) {
-        // Upload profile photo if provided
-        let avatarUrl = null;
-        if (profilePhoto) {
-          avatarUrl = await uploadProfilePhoto(data.user.id, profilePhoto);
-        }
-
-        // Update profile with additional data
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: fullName,
-            phone_number: phoneNumber,
-            date_of_birth: dateOfBirth || null,
-            address: address,
-            avatar_url: avatarUrl
-          })
-          .eq('user_id', data.user.id);
-
-        if (profileError) {
-          console.error('Error updating profile:', profileError);
-        }
-
-        toast.success("Check your email for the confirmation link!");
+      if (emailError) {
+        console.error('Email error:', emailError);
+        setError("Failed to send verification code. Please try again.");
+        return;
       }
+
+      toast.success("Verification code sent to your email!");
+      setShowOTPVerification(true);
+      
     } catch (err) {
+      console.error('Signup error:', err);
       setError("An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOTPVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOtpLoading(true);
+    setError("");
+
+    try {
+      const { data: verifyResponse, error: verifyError } = await supabase.functions.invoke('verify-otp', {
+        body: {
+          email,
+          otp: otp.trim()
+        }
+      });
+
+      if (verifyError || !verifyResponse?.success) {
+        setError(verifyResponse?.error || "Invalid verification code. Please try again.");
+        return;
+      }
+
+      toast.success("Account created successfully!");
+      
+      // Sign in the user after successful verification
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        toast.success("Account created! Please sign in with your credentials.");
+        setShowOTPVerification(false);
+        // Reset form
+        setEmail("");
+        setPassword("");
+        setFullName("");
+        setPhoneNumber("");
+        setDateOfBirth("");
+        setAddress("");
+        setProfilePhoto(null);
+        setPhotoPreview("");
+        setOtp("");
+      } else {
+        navigate("/");
+      }
+      
+    } catch (err) {
+      console.error('OTP verification error:', err);
+      setError("Verification failed. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const newOtpCode = generateOTP();
+      
+      // Update the OTP in pending_users table
+      const { error: updateError } = await supabase
+        .from('pending_users')
+        .update({ 
+          otp_code: newOtpCode,
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes from now
+        })
+        .eq('email', email);
+
+      if (updateError) {
+        setError("Failed to resend code. Please try again.");
+        return;
+      }
+
+      // Send new OTP email
+      const { error: emailError } = await supabase.functions.invoke('send-otp', {
+        body: {
+          email,
+          otp: newOtpCode,
+          fullName: fullName || 'User'
+        }
+      });
+
+      if (emailError) {
+        setError("Failed to send verification code. Please try again.");
+        return;
+      }
+
+      toast.success("New verification code sent!");
+      
+    } catch (err) {
+      console.error('Resend OTP error:', err);
+      setError("Failed to resend code. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -166,6 +277,74 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  // Show OTP verification screen
+  if (showOTPVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
+            <CardDescription>
+              We sent a 6-digit verification code to<br />
+              <strong>{email}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleOTPVerification} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="otp">Verification Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  placeholder="Enter 6-digit code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  className="text-center text-lg tracking-wider"
+                  required
+                />
+              </div>
+              
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+              
+              <Button type="submit" className="w-full" disabled={otpLoading || otp.length !== 6}>
+                {otpLoading ? "Verifying..." : "Verify Code"}
+              </Button>
+              
+              <div className="text-center space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the code?
+                </p>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  onClick={handleResendOTP}
+                  disabled={loading}
+                  className="p-0 h-auto"
+                >
+                  {loading ? "Sending..." : "Resend Code"}
+                </Button>
+                <br />
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  onClick={() => setShowOTPVerification(false)}
+                  className="p-0 h-auto text-sm"
+                >
+                  ← Back to signup
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">

@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      pending_users: {
+        Row: {
+          address: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          expires_at: string
+          full_name: string | null
+          id: string
+          otp_code: string
+          password_hash: string
+          phone_number: string | null
+          profile_photo_data: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          otp_code: string
+          password_hash: string
+          phone_number?: string | null
+          profile_photo_data?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          expires_at?: string
+          full_name?: string | null
+          id?: string
+          otp_code?: string
+          password_hash?: string
+          phone_number?: string | null
+          profile_photo_data?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -61,7 +103,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_pending_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
