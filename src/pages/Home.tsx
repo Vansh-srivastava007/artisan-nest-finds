@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Sofa, Cookie, Shirt, Home as HomeIcon, Gem } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Header from '@/components/ui/header';
 import BottomNav from '@/components/ui/bottom-nav';
 import ProductCard from '@/components/ui/product-card';
@@ -15,22 +16,19 @@ const Home = () => {
 
   const featuredArtisans = [
     {
-      name: "Rajesh Pottery Works",
-      specialty: "Traditional Clay Crafts",
+      title: "Traditional Clay Crafts",
+      description: "Discover authentic pottery made with age-old techniques",
       image: potteryImage,
-      rating: 4.8
     },
     {
-      name: "Maya Textiles",
-      specialty: "Handwoven Fabrics",
+      title: "Handwoven Fabrics", 
+      description: "Beautiful textiles crafted on traditional looms",
       image: textileImage,
-      rating: 4.9
     },
     {
-      name: "Wooden Wonders",
-      specialty: "Custom Furniture",
+      title: "Custom Furniture",
+      description: "Unique wooden pieces handcrafted to perfection",
       image: furnitureImage,
-      rating: 4.7
     }
   ];
 
@@ -108,11 +106,13 @@ const Home = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="container px-4">
                     <div className="text-white max-w-md">
-                      <h2 className="text-3xl font-bold mb-2">{artisan.name}</h2>
-                      <p className="text-lg mb-4">{artisan.specialty}</p>
-                      <Button variant="secondary" className="bg-white text-craft-warm hover:bg-white/90">
-                        View Collection
-                      </Button>
+                      <h2 className="text-3xl font-bold mb-2">{artisan.title}</h2>
+                      <p className="text-lg mb-4">{artisan.description}</p>
+                      <Link to="/categories">
+                        <Button variant="secondary" className="bg-white text-craft-warm hover:bg-white/90">
+                          Explore Collection
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -171,9 +171,11 @@ const Home = () => {
       <section className="container px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">Trending Now</h2>
-          <Button variant="ghost" className="text-craft-terracotta">
-            View All
-          </Button>
+          <Link to="/categories">
+            <Button variant="ghost" className="text-craft-terracotta">
+              View All
+            </Button>
+          </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {trendingProducts.map((product) => (

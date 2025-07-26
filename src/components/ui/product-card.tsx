@@ -1,8 +1,10 @@
 import { Button } from './button';
 import { Badge } from './badge';
 import { Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ProductCardProps {
+  id?: number;
   image: string;
   title: string;
   price: number;
@@ -11,16 +13,17 @@ interface ProductCardProps {
   badge?: string;
 }
 
-const ProductCard = ({ image, title, price, seller, rating = 4.5, badge }: ProductCardProps) => {
+const ProductCard = ({ id = 1, image, title, price, seller, rating = 4.5, badge }: ProductCardProps) => {
   return (
-    <div className="group rounded-2xl border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-craft)] hover:-translate-y-1">
-      <div className="aspect-square overflow-hidden">
-        <img 
-          src={image} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-      </div>
+    <Link to={`/product/${id}`} className="block">
+      <div className="group rounded-2xl border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-craft)] hover:-translate-y-1">
+        <div className="aspect-square overflow-hidden">
+          <img 
+            src={image} 
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
       <div className="p-4 space-y-3">
         {badge && (
           <Badge variant="secondary" className="bg-craft-sage/20 text-craft-warm border-craft-sage/30">
@@ -37,12 +40,20 @@ const ProductCard = ({ image, title, price, seller, rating = 4.5, badge }: Produ
         </div>
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-craft-terracotta">₹{price.toLocaleString()}</span>
-          <Button size="sm" className="bg-gradient-to-r from-craft-terracotta to-orange-500 hover:from-craft-terracotta/90 hover:to-orange-500/90">
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-craft-terracotta to-orange-500 hover:from-craft-terracotta/90 hover:to-orange-500/90"
+            onClick={(e) => {
+              e.preventDefault();
+              // Handle buy now logic here
+            }}
+          >
             Buy Now
           </Button>
         </div>
       </div>
     </div>
+  </Link>
   );
 };
 
