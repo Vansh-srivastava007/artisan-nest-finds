@@ -7,106 +7,20 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      pending_users: {
-        Row: {
-          address: string | null
-          created_at: string
-          date_of_birth: string | null
-          email: string
-          expires_at: string
-          full_name: string | null
-          id: string
-          otp_code: string
-          password_hash: string
-          phone_number: string | null
-          profile_photo_data: string | null
-        }
-        Insert: {
-          address?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          email: string
-          expires_at?: string
-          full_name?: string | null
-          id?: string
-          otp_code: string
-          password_hash: string
-          phone_number?: string | null
-          profile_photo_data?: string | null
-        }
-        Update: {
-          address?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          email?: string
-          expires_at?: string
-          full_name?: string | null
-          id?: string
-          otp_code?: string
-          password_hash?: string
-          phone_number?: string | null
-          profile_photo_data?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          address: string | null
-          avatar_url: string | null
-          created_at: string
-          date_of_birth: string | null
-          display_name: string | null
-          email: string | null
-          full_name: string | null
-          id: string
-          phone_number: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          address?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          display_name?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          phone_number?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          address?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          date_of_birth?: string | null
-          display_name?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string
-          phone_number?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_pending_users: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
